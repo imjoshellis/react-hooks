@@ -1,19 +1,36 @@
 // useEffect: HTTP requests
 // http://localhost:3000/isolated/exercise/06.js
 
-import React from 'react'
+import React, {useEffect, useState} from 'react'
 // 🐨 you'll want the following additional things from '../pokemon':
 // fetchPokemon: the function we call to get the pokemon info
 // PokemonInfoFallback: the thing we show while we're loading the pokemon info
 // PokemonDataView: the stuff we use to display the pokemon info
-import {PokemonForm} from '../pokemon'
+import {
+  fetchPokemon,
+  PokemonInfoFallback,
+  PokemonDataView,
+  PokemonForm,
+} from '../pokemon'
 
-function PokemonInfo({pokemonName}) {
+function PokemonInfo ({pokemonName}) {
   // 🐨 Have state for the pokemon (null)
+  const [state, setState] = useState({status: 'idle'})
   // 🐨 use React.useEffect where the callback should be called whenever the
   // pokemon name changes.
   // 💰 DON'T FORGET THE DEPENDENCIES ARRAY!
   // 💰 if the pokemonName is falsy (an empty string) then don't bother making the request (exit early).
+  useEffect(() => {
+    if (!pokemonName) return
+    setState({status: 'fetching'})
+    fetchPokemon(pokemonName)
+      .then(pokemon => {
+        setState({pokemon, status: 'resolved'})
+      })
+      .catch(error => {
+        setState({error, status: 'rejected'})
+      })
+  }, [pokemonName])
   // 🐨 before calling `fetchPokemon`, make sure to update the loading state
   // 💰 Use the `fetchPokemon` function to fetch a pokemon by its name:
   //   fetchPokemon('Pikachu').then(
@@ -23,15 +40,25 @@ function PokemonInfo({pokemonName}) {
   //   1. no pokemon name: 'Submit a pokemon'
   //   2. pokemon name but no pokemon: <PokemonInfoFallback name={pokemonName} />
   //   3. pokemon: <PokemonDataView pokemon={pokemon} />
+  if (state.status === 'rejected')
+    return (
+      <div role="alert">
+        There was an error:{' '}
+        <pre style={{whiteSpace: 'normal'}}>{state.error.message}</pre>
+      </div>
+    )
 
-  // 💣 remove this
-  return 'TODO'
+  if (state.status === 'idle') return 'Submit a pokemon'
+  if (state.status === 'resolved')
+    return <PokemonDataView pokemon={state.pokemon} />
+  if (state.status === 'fetching')
+    return <PokemonInfoFallback name={pokemonName} />
 }
 
-function App() {
+function App () {
   const [pokemonName, setPokemonName] = React.useState('')
 
-  function handleSubmit(newPokemonName) {
+  function handleSubmit (newPokemonName) {
     setPokemonName(newPokemonName)
   }
 
